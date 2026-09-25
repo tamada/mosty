@@ -3,10 +3,12 @@
 use super::summary_line;
 use crate::problem::Report;
 
+/// Renders the reports one after another.
 pub(super) fn render(reports: &[Report]) -> String {
     reports.iter().map(render_report).collect()
 }
 
+/// Renders the file name, the problems (indented), and the summary.
 fn render_report(report: &Report) -> String {
     let mut lines = vec![report.file.display().to_string()];
     lines.extend(report.problems.iter().map(|problem| format!("  {problem}")));

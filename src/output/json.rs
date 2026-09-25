@@ -2,6 +2,7 @@
 
 use crate::problem::Report;
 
+/// Renders the reports as a pretty-printed JSON array.
 pub(super) fn render(reports: &[Report]) -> String {
     let json = serde_json::to_string_pretty(reports).expect("reports are always serializable");
     json + "\n"

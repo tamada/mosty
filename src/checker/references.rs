@@ -7,6 +7,7 @@ use crate::problem::{Location, Problem, RangeLocation};
 use crate::table::StudentTable;
 
 impl Checker<'_> {
+    /// Checks the cross-sheet references from the student rows of all student tables.
     pub(super) fn reference_problems(&self) -> Vec<Problem> {
         self.tables
             .values()
@@ -28,6 +29,7 @@ impl Checker<'_> {
             .collect()
     }
 
+    /// Checks the references in the formula of the source cell.
     fn formula_problems(&self, source: &Location, text: &str) -> Vec<Problem> {
         let formula = formula::parse(text);
         for term in &formula.unresolved {
@@ -44,6 +46,8 @@ impl Checker<'_> {
             .collect()
     }
 
+    /// Checks a reference. References in the same sheet, to non-student sheets,
+    /// and in `OFFSET` or `INDIRECT` are not checked.
     fn reference_problem(&self, source: &Location, reference: &Reference) -> Option<Problem> {
         let sheet = reference
             .sheet
@@ -62,6 +66,7 @@ impl Checker<'_> {
     }
 }
 
+/// Checks a reference to a single row: the student of the row must be the same.
 fn single_row_problem(source: &Location, target: &StudentTable, cell: CellRef) -> Option<Problem> {
     let Some(student) = target.student(cell.row) else {
         log::info!(
@@ -98,12 +103,14 @@ fn multi_row_problem(
     }
 }
 
+/// Logs that the lookup range is skipped.
 fn skip_lookup(source: &Location, range: &RangeLocation) -> Option<Problem> {
     let (sheet, cell) = (&source.sheet, source.cell);
     log::debug!("{sheet}!{cell}: skipped the lookup range {range}");
     None
 }
 
+/// Returns [`Problem::IdMismatch`] if the students of the source and the target differ.
 fn mismatch(source: &Location, target: Location) -> Option<Problem> {
     (source.id != target.id).then(|| Problem::IdMismatch {
         source: source.clone(),

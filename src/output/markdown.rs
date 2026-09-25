@@ -3,13 +3,16 @@
 use super::summary_line;
 use crate::problem::{Problem, Report};
 
+/// The header of the table of problems.
 const HEADER: &str = "| Kind | Source | Target | Description |\n|---|---|---|---|";
 
+/// Renders a section for each report.
 pub(super) fn render(reports: &[Report]) -> String {
     let sections: Vec<_> = reports.iter().map(render_report).collect();
     sections.join("\n")
 }
 
+/// Renders the heading, the table (if any problems), and the summary of the report.
 fn render_report(report: &Report) -> String {
     let mut lines = vec![format!("## {}", report.file.display()), String::new()];
     if report.has_problems() {
@@ -21,6 +24,7 @@ fn render_report(report: &Report) -> String {
     lines.join("\n") + "\n"
 }
 
+/// Renders a row of the table.
 fn render_row(problem: &Problem) -> String {
     let kind = problem.kind();
     let [source, target, description] = columns(problem).map(|cell| escape(&cell));
@@ -41,6 +45,7 @@ fn columns(problem: &Problem) -> [String; 3] {
     [source, target, problem.description()]
 }
 
+/// Returns the source and the target of the problem (the target may be empty).
 fn endpoints(problem: &Problem) -> (String, String) {
     match problem {
         Problem::IdMismatch { source, target } => (source.to_string(), target.to_string()),

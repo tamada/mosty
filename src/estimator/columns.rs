@@ -26,6 +26,7 @@ pub(super) fn analyze(
     SheetAnalysis { name, table }
 }
 
+/// Warns about the estimation which users should review.
 fn warn_estimate(reader: RowReader, table: &TableEstimate) {
     let (workbook, sheet, pattern) = (reader.workbook, reader.sheet, reader.pattern);
     warn_ties(sheet, table);
@@ -33,13 +34,18 @@ fn warn_estimate(reader: RowReader, table: &TableEstimate) {
     warn_duplicates(StudentTable::build(sheet, table.layout, workbook, pattern));
 }
 
+/// Scans the candidate columns of a sheet.
 struct Scanner<'a> {
+    /// The reader of the sheet.
     reader: RowReader<'a>,
+    /// The rows which have values or formulas.
     rows: RangeInclusive<u32>,
+    /// The last candidate column.
     max_column: u32,
 }
 
 impl<'a> Scanner<'a> {
+    /// Creates a scanner of the rows and the columns `0..=max_column`.
     fn new(reader: RowReader<'a>, rows: RangeInclusive<u32>, max_column: u32) -> Self {
         Self {
             reader,
@@ -48,6 +54,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    /// Estimates the student table, or returns `None` if no student ids are found.
     fn estimate(&self) -> Option<TableEstimate> {
         let (id_column, id_rows, tied_columns) = self.id_column()?;
         let name = self.name_column(id_column, &id_rows);
@@ -82,6 +89,7 @@ impl<'a> Scanner<'a> {
         Some((column, rows, best.map(|(col, _)| col).collect()))
     }
 
+    /// Returns the rows which have student ids in the column.
     fn id_rows(&self, col: u32) -> Vec<u32> {
         self.rows
             .clone()
@@ -105,6 +113,7 @@ impl<'a> Scanner<'a> {
     }
 }
 
+/// Warns if other columns have as many student ids as the chosen id column.
 fn warn_ties(sheet: &str, table: &TableEstimate) {
     if !table.tied_columns.is_empty() {
         let others: Vec<_> = table
@@ -129,6 +138,7 @@ fn warn_unresolved_outside(reader: &RowReader, layout: &TableLayout) {
     }
 }
 
+/// Warns about the duplicated student ids in the table.
 fn warn_duplicates(table: StudentTable) {
     for (id, cells) in table.duplicates() {
         let cells: Vec<_> = cells

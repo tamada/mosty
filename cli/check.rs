@@ -7,6 +7,11 @@ use std::path::Path;
 
 /// Returns true if any problems are found. The reports of the files checked successfully
 /// are written even if other files fail, and then the errors are returned.
+///
+/// # Errors
+///
+/// Returns the errors of loading the configs, reading the Excel files, and writing
+/// the results.
 pub fn perform(opts: &CheckOpts) -> Result<bool> {
     let (reports, errors): (Vec<_>, Vec<_>) = opts
         .files
@@ -20,6 +25,7 @@ pub fn perform(opts: &CheckOpts) -> Result<bool> {
     Error::error_or(reports.iter().any(Report::has_problems), errors)
 }
 
+/// Checks the Excel file with its config. `--id-pattern` overrides the config.
 fn check_file(file: &Path, opts: &CheckOpts) -> Result<Report> {
     let mut config = load_config(file, opts)?;
     if let Some(pattern) = &opts.pattern {
@@ -40,6 +46,7 @@ fn load_config(file: &Path, opts: &CheckOpts) -> Result<Config> {
     }
 }
 
+/// Runs `init` for the Excel file, and writes the config file to the path.
 fn init_config(file: &Path, path: &Path, opts: &CheckOpts) -> Result<Config> {
     log::warn!(
         "{}: config file not found; ran `mosty init`, review the written file",

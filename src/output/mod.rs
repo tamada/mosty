@@ -1,4 +1,16 @@
 //! Renders the results of checking (spec 7.3).
+//!
+//! ```
+//! use mosty::output::{self, Format};
+//! use mosty::{Config, default_config_path};
+//! use std::path::Path;
+//!
+//! let excel = Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/valid.xlsx");
+//! let config = Config::load(&default_config_path(&excel)).unwrap();
+//! let report = mosty::check(&excel, &config).unwrap();
+//! let text = output::render(&[report], Format::Markdown);
+//! assert!(text.contains("0 problems (4 sheets, 20 references checked)"));
+//! ```
 
 mod json;
 mod markdown;
@@ -19,6 +31,25 @@ pub enum Format {
 }
 
 /// Renders the reports of the Excel files in the format.
+///
+/// # Example
+///
+/// ```
+/// use mosty::output::{self, Format};
+/// use mosty::{Config, default_config_path};
+/// use std::path::Path;
+///
+/// let excel = Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/name_mismatch.xlsx");
+/// let config = Config::load(&default_config_path(&excel)).unwrap();
+/// let report = mosty::check(&excel, &config).unwrap();
+///
+/// let json: serde_json::Value =
+///     serde_json::from_str(&output::render(&[report.clone()], Format::Json)).unwrap();
+/// assert_eq!(json[0]["problems"][0]["kind"], "id_mismatch");
+///
+/// let text = output::render(&[report], Format::Default);
+/// assert!(text.starts_with(&excel.display().to_string()));
+/// ```
 pub fn render(reports: &[Report], format: Format) -> String {
     match format {
         Format::Default => plain::render(reports),

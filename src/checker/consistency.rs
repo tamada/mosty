@@ -35,6 +35,7 @@ impl Checker<'_> {
             .collect()
     }
 
+    /// Finds student ids outside the student table of the sheet.
     fn ids_outside(&self, table: &StudentTable) -> Vec<Problem> {
         let Some(rows) = self.workbook.rows(&table.sheet) else {
             return Vec::new();

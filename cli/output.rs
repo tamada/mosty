@@ -9,6 +9,10 @@ pub fn is_stdout(dest: &Path) -> bool {
 }
 
 /// Writes the text to the destination. `None` and `-` mean stdout.
+///
+/// # Errors
+///
+/// Returns [`Error::Io`] if the file cannot be written.
 pub fn write(dest: Option<&Path>, text: &str) -> Result<()> {
     match dest.filter(|dest| !is_stdout(dest)) {
         Some(path) => std::fs::write(path, text).map_err(|e| Error::Io(path.to_path_buf(), e)),

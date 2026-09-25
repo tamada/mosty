@@ -3,6 +3,7 @@
 use super::{Analysis, SheetAnalysis, TableEstimate};
 use crate::cell::column_name;
 
+/// Renders the whole config file.
 pub(super) fn render(analysis: &Analysis) -> String {
     let file = analysis
         .file
@@ -23,6 +24,7 @@ pub(super) fn render(analysis: &Analysis) -> String {
     lines.join("\n")
 }
 
+/// Renders the entry of a sheet.
 fn render_sheet(sheet: &SheetAnalysis) -> Vec<String> {
     let name = quote(&sheet.name);
     let Some(table) = &sheet.table else {
@@ -40,6 +42,7 @@ fn render_sheet(sheet: &SheetAnalysis) -> Vec<String> {
     lines
 }
 
+/// Renders the keys of a student table with the evidences.
 fn render_table(table: &TableEstimate) -> Vec<String> {
     let layout = &table.layout;
     vec![
@@ -50,6 +53,7 @@ fn render_table(table: &TableEstimate) -> Vec<String> {
     ]
 }
 
+/// Renders `name_column` with the number of names.
 fn name_line(table: &TableEstimate) -> String {
     match table.layout.name_column {
         Some(col) => format!(
@@ -61,10 +65,12 @@ fn name_line(table: &TableEstimate) -> String {
     }
 }
 
+/// Renders a row key with the Excel row number.
 fn row_line(key: &str, row: u32) -> String {
     format!("{key}: {row}, // Excel row {}", row + 1)
 }
 
+/// Renders the evidence of the id column, noting the tied columns.
 fn id_evidence(table: &TableEstimate) -> String {
     let column = column_name(table.layout.id_column);
     if table.tied_columns.is_empty() {

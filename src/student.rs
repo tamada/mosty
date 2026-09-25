@@ -1,4 +1,18 @@
 //! Student ids and their patterns (spec 5.3).
+//!
+//! Student ids are written in cells as numbers (`1234001`), texts (`"1234001"`),
+//! or texts with prefixes (`"g1234001"`). [`IdPattern`] finds and normalizes them
+//! so that the ids in different forms are compared as the same student.
+//!
+//! ```
+//! use calamine::Data;
+//! use mosty::student::IdPattern;
+//!
+//! let pattern = IdPattern::new("^[A-Za-z]*(?<id>[0-9]{7})$").unwrap();
+//! let number = pattern.extract(&Data::Float(1234001.0));
+//! let text = pattern.extract(&Data::String("g1234001".into()));
+//! assert_eq!(number, text);
+//! ```
 
 use crate::{Error, Result};
 use calamine::Data;
@@ -9,6 +23,14 @@ use std::fmt;
 pub const DEFAULT_ID_PATTERN: &str = "^[0-9]{7}$";
 
 /// A normalized student id, which is compared to identify students.
+///
+/// # Example
+///
+/// ```
+/// use mosty::student::StudentId;
+///
+/// assert_eq!(StudentId::from("1234001").to_string(), "1234001");
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 #[serde(transparent)]
 pub struct StudentId(String);
@@ -28,18 +50,36 @@ impl fmt::Display for StudentId {
 /// A student in a row of a student table.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Student {
+    /// The normalized student id.
     pub id: StudentId,
+    /// The name, or `None` if the sheet has no name column. It is used only for display.
     pub name: Option<String>,
 }
 
 /// The pattern to find student ids in cells.
 #[derive(Debug, Clone)]
 pub struct IdPattern {
+    /// The pattern wrapped by `^(?:` and `)$` to match whole texts.
     regex: Regex,
 }
 
 impl IdPattern {
     /// Creates the pattern. It always matches the whole cell, even without `^` and `$`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Regex`] if the pattern is not a valid regular expression.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use calamine::Data;
+    /// use mosty::student::IdPattern;
+    ///
+    /// let pattern = IdPattern::new("[0-9]{7}").unwrap();
+    /// assert!(pattern.extract(&Data::String("g1234001".into())).is_none());
+    /// assert!(IdPattern::new("[0-9").is_err());
+    /// ```
     pub fn new(pattern: &str) -> Result<Self> {
         Regex::new(&format!("^(?:{pattern})$"))
             .map(|regex| Self { regex })
@@ -48,6 +88,19 @@ impl IdPattern {
 
     /// Returns the normalized student id if the cell matches the pattern.
     /// The named group `id` is used as the id if it exists.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use calamine::Data;
+    /// use mosty::student::{IdPattern, StudentId};
+    ///
+    /// let pattern = IdPattern::default(); // ^[0-9]{7}$
+    /// let id = Some(StudentId::from("1234004"));
+    /// assert_eq!(pattern.extract(&Data::Float(1234004.0)), id);
+    /// assert_eq!(pattern.extract(&Data::String(" 1234004\u{3000}".into())), id);
+    /// assert_eq!(pattern.extract(&Data::String("g1234004".into())), None);
+    /// ```
     pub fn extract(&self, data: &Data) -> Option<StudentId> {
         let text = cell_text(data)?;
         let captures = self.regex.captures(&text)?;
@@ -56,6 +109,7 @@ impl IdPattern {
     }
 }
 
+/// The pattern of [`DEFAULT_ID_PATTERN`].
 impl Default for IdPattern {
     fn default() -> Self {
         Self::new(DEFAULT_ID_PATTERN).expect("the default pattern is valid")
@@ -63,7 +117,20 @@ impl Default for IdPattern {
 }
 
 /// Converts the cell value into a trimmed text. Integral floats have no fractions
-/// (`1234001.0` becomes `1234001`).
+/// (`1234001.0` becomes `1234001`). Returns `None` for empty texts and non-text values
+/// such as booleans and errors.
+///
+/// # Example
+///
+/// ```
+/// use calamine::Data;
+/// use mosty::student::cell_text;
+///
+/// assert_eq!(cell_text(&Data::Float(1234001.0)), Some("1234001".to_string()));
+/// assert_eq!(cell_text(&Data::Float(1.5)), Some("1.5".to_string()));
+/// assert_eq!(cell_text(&Data::String("  京都 太郎 ".into())), Some("京都 太郎".to_string()));
+/// assert_eq!(cell_text(&Data::Bool(true)), None);
+/// ```
 pub fn cell_text(data: &Data) -> Option<String> {
     let text = match data {
         Data::Int(i) => i.to_string(),

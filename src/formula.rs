@@ -1,4 +1,19 @@
 //! Extracts cell references from formulas (spec 6.3).
+//!
+//! The parser recognizes cell references with or without sheet names
+//! (quoted names such as `'課題 (前半)'!$D$4` are supported), ranges, whole columns,
+//! and whole rows. It also records whether each reference is used in lookup
+//! functions (e.g., `VLOOKUP`) or in functions whose referring cells are determined
+//! at runtime (e.g., `OFFSET`), since the checker treats them differently (spec 6.4).
+//!
+//! ```
+//! use mosty::formula::{self, Usage};
+//!
+//! let formula = formula::parse("=課題!E4*配点!$B$2/20");
+//! let sheets: Vec<_> = formula.references.iter().map(|r| r.sheet.as_deref()).collect();
+//! assert_eq!(sheets, vec![Some("課題"), Some("配点")]);
+//! assert!(formula.references.iter().all(|r| r.usage == Usage::Direct));
+//! ```
 
 use crate::cell::{CellRange, CellRef};
 use std::ops::Range;
@@ -40,14 +55,18 @@ pub enum Usage {
 pub struct Reference {
     /// The sheet name, or `None` for a reference in the same sheet.
     pub sheet: Option<String>,
+    /// The referred cells. A single cell is a range of the cell.
     pub range: CellRange,
+    /// How the reference is used in the formula.
     pub usage: Usage,
+    /// The position of the reference in the formula (in characters).
     span: Range<usize>,
 }
 
 /// The result of parsing a formula.
 #[derive(Debug, Default)]
 pub struct Formula {
+    /// The references in the order of appearance, including those in the same sheet.
     pub references: Vec<Reference>,
     /// Terms whose referring cells cannot be determined statically
     /// (named ranges, external references, `OFFSET`, `INDIRECT`).
@@ -55,12 +74,41 @@ pub struct Formula {
 }
 
 /// Parses the given formula (with or without the leading `=`).
+///
+/// # Example
+///
+/// ```
+/// use mosty::formula::{self, Usage};
+///
+/// let formula = formula::parse("VLOOKUP(A2,課題!$A$4:$E$8,5,FALSE)+SUM(課題合計)");
+/// let reference = &formula.references[1];
+/// assert_eq!(reference.sheet.as_deref(), Some("課題"));
+/// assert_eq!(reference.range.to_string(), "A4:E8");
+/// assert_eq!(reference.usage, Usage::Lookup);
+/// // The named range cannot be resolved statically.
+/// assert_eq!(formula.unresolved, vec!["課題合計"]);
+/// ```
 pub fn parse(text: &str) -> Formula {
     Parser::new(text).run()
 }
 
 /// Returns the reference if the formula consists of a single cell reference only
 /// (e.g., `=名簿!A5`), which is followed to resolve values without cache (spec 5.4).
+///
+/// # Example
+///
+/// ```
+/// use mosty::cell::CellRef;
+/// use mosty::formula::simple_reference;
+///
+/// assert_eq!(
+///     simple_reference("=名簿!A5"),
+///     Some((Some("名簿".to_string()), CellRef::new(4, 0)))
+/// );
+/// assert_eq!(simple_reference("A5"), Some((None, CellRef::new(4, 0))));
+/// assert_eq!(simple_reference("=名簿!A5+1"), None);
+/// assert_eq!(simple_reference(r#"=TEXT(名簿!A5,"0")"#), None);
+/// ```
 pub fn simple_reference(text: &str) -> Option<(Option<String>, CellRef)> {
     let text = text.trim().trim_start_matches('=');
     let formula = parse(text);
@@ -72,14 +120,19 @@ pub fn simple_reference(text: &str) -> Option<(Option<String>, CellRef)> {
     }
 }
 
+/// The kind of a parenthesized group (a function call or a plain group).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Frame {
+    /// A plain group, or a function call of other functions.
     Plain,
+    /// A call of a lookup function.
     Lookup,
+    /// A call of `OFFSET` or `INDIRECT`.
     Dynamic,
 }
 
 impl Frame {
+    /// Returns the frame of the function (the prefixes such as `_xlfn.` are ignored).
     fn of(function: &str) -> Self {
         let name = function
             .rsplit('.')
@@ -96,14 +149,20 @@ impl Frame {
     }
 }
 
+/// A hand-written scanner of formulas, which tracks the enclosing functions.
 struct Parser {
+    /// The characters of the formula without the leading `=`.
     chars: Vec<char>,
+    /// The current position in `chars`.
     pos: usize,
+    /// The enclosing groups, the innermost last.
     frames: Vec<Frame>,
+    /// The result being built.
     formula: Formula,
 }
 
 impl Parser {
+    /// Creates a parser of the formula (with or without the leading `=`).
     fn new(text: &str) -> Self {
         let text = text.trim().trim_start_matches('=');
         Self {
@@ -114,6 +173,7 @@ impl Parser {
         }
     }
 
+    /// Scans the whole formula, and returns the result.
     fn run(mut self) -> Formula {
         while let Some(c) = self.peek() {
             match c {
@@ -130,10 +190,12 @@ impl Parser {
         self.formula
     }
 
+    /// Returns the current character.
     fn peek(&self) -> Option<char> {
         self.chars.get(self.pos).copied()
     }
 
+    /// Consumes the character if it is the current one.
     fn eat(&mut self, c: char) -> bool {
         let matched = self.peek() == Some(c);
         if matched {
@@ -142,6 +204,7 @@ impl Parser {
         matched
     }
 
+    /// Consumes and returns the word characters at the current position.
     fn read_word(&mut self) -> String {
         let start = self.pos;
         while self.peek().is_some_and(is_word_char) {
@@ -150,16 +213,19 @@ impl Parser {
         self.chars[start..self.pos].iter().collect()
     }
 
+    /// Consumes `(`, and enters the group.
     fn open(&mut self, frame: Frame) {
         self.pos += 1;
         self.frames.push(frame);
     }
 
+    /// Consumes `)`, and leaves the group.
     fn close(&mut self) {
         self.pos += 1;
         self.frames.pop();
     }
 
+    /// Returns the usage of references at the current position from the enclosing groups.
     fn usage(&self) -> Usage {
         if self.frames.contains(&Frame::Dynamic) {
             Usage::Dynamic
@@ -170,6 +236,7 @@ impl Parser {
         }
     }
 
+    /// Skips a string literal (`""` is an escaped quote).
     fn skip_string(&mut self) {
         self.pos += 1;
         while let Some(c) = self.peek() {
@@ -180,6 +247,7 @@ impl Parser {
         }
     }
 
+    /// Skips an error literal such as `#N/A` and `#REF!`.
     fn skip_error_literal(&mut self) {
         self.pos += 1;
         self.read_word();
@@ -202,6 +270,7 @@ impl Parser {
         }
     }
 
+    /// Enters the call of the function. Dynamic functions are recorded as unresolved.
     fn function(&mut self, name: String) {
         let frame = Frame::of(&name);
         if frame == Frame::Dynamic {
@@ -232,6 +301,7 @@ impl Parser {
         text
     }
 
+    /// Reads a quoted sheet name (`''` is an escaped quote) and the following reference.
     fn quoted_sheet(&mut self) {
         let start = self.pos;
         self.pos += 1;
@@ -252,6 +322,7 @@ impl Parser {
         }
     }
 
+    /// Reads an external reference such as `[1]Sheet1!A1`, which is recorded as unresolved.
     fn external_reference(&mut self) {
         let start = self.pos;
         while self.peek().is_some_and(|c| c != ']') {
@@ -265,11 +336,14 @@ impl Parser {
         }
     }
 
+    /// Reads the cell part of an external reference, and records it as unresolved.
     fn external_tail(&mut self, name: String) {
         let range = self.read_range_text();
         self.formula.unresolved.push(format!("{name}!{range}"));
     }
 
+    /// Reads the cell part after `<sheet>!`. Non-cell terms (e.g., sheet-level names)
+    /// are recorded as unresolved.
     fn sheet_reference(&mut self, start: usize, sheet: Option<String>) {
         let text = self.read_range_text();
         match CellRange::parse(&text) {
@@ -281,6 +355,7 @@ impl Parser {
         }
     }
 
+    /// Records the reference from `start` to the current position.
     fn push_reference(&mut self, start: usize, sheet: Option<String>, text: &str) {
         if let Some(range) = CellRange::parse(text) {
             let usage = self.usage();
@@ -295,6 +370,7 @@ impl Parser {
     }
 }
 
+/// Returns true if the character can be a part of a word.
 fn is_word_char(c: char) -> bool {
     !c.is_whitespace() && !DELIMITERS.contains(c)
 }

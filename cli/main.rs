@@ -1,3 +1,10 @@
+//! The command line interface of mosty.
+//!
+//! - `mosty init`: estimates the layouts of the student tables, and writes the config files.
+//! - `mosty check`: verifies the cross-sheet references with the config files.
+//!
+//! See `.github/assets/spec.md` for the specification.
+
 use clap::Parser;
 use mosty::{Error, Result};
 
@@ -15,6 +22,7 @@ fn perform(app: cli::MostyApp) -> Result<bool> {
     }
 }
 
+/// Parses the arguments, and runs the subcommand.
 fn perform_main(args: &[String]) -> Result<bool> {
     cli::MostyApp::try_parse_from(args)
         .map_err(Error::Clap)
@@ -34,6 +42,7 @@ fn exit_status(result: Result<bool>) -> i32 {
     }
 }
 
+/// Prints the help, the version, or the error of the arguments, and returns the status.
 fn clap_exit_status(e: clap::Error) -> i32 {
     use clap::error::ErrorKind;
     if matches!(e.kind(), ErrorKind::DisplayHelp | ErrorKind::DisplayVersion) {
