@@ -73,14 +73,10 @@ jobs:
             target: x86_64-unknown-linux-gnu
             architecture: amd64
             os_name: linux
-            # the runner can execute what it just built, so the artifact itself
-            # can be asked whether it serves MCP
-            native: true
           - os: macos-latest
             target: aarch64-apple-darwin
             architecture: arm64
             os_name: darwin
-            native: true
           - os: macos-latest
             target: x86_64-apple-darwin
             architecture: amd64
@@ -114,7 +110,7 @@ jobs:
           mkdir -p "dist/$ASSET_NAME"
           cp "target/${TARGET}/release/${APPNAME}" "dist/$ASSET_NAME/"
           cp README.md LICENSE "dist/$ASSET_NAME/"
-          cp -r assets/completions "dist/$ASSET_NAME/"
+          # cp -r assets/completions "dist/$ASSET_NAME/"
           tar cvfz "dist/${ASSET_NAME}.tar.gz" -C dist "$ASSET_NAME"
 
       - name: Upload assets

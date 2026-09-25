@@ -23,13 +23,13 @@ jobs:
       - name: build
         run: |
           cargo fmt --all -- --check
-          cargo clippy --all-targets --features mcp -- -D warnings
+          cargo clippy --all-targets -- -D warnings
+          cargo test
           cargo build --release
 
       - name: Convert coverage format to lcov
         if: matrix.os == 'ubuntu-latest'
         run: |
-          export GHIDRA_HOME=${{ env.GHIDRA_INSTALL_DIR }}
           cargo install cargo-llvm-cov
           rustup component add llvm-tools-preview
           cargo llvm-cov --lcov --output-path coverage.lcov
