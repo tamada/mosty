@@ -136,3 +136,8 @@ rustc-ice-*.txt
 #.idea/
 
 
+
+# Hugo (docs/)
+/docs/public/
+/docs/resources/
+.hugo_build.lock
