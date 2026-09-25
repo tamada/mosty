@@ -6,6 +6,7 @@
 pub mod cell;
 mod checker;
 pub mod config;
+pub mod estimator;
 pub mod formula;
 pub mod problem;
 pub mod student;
@@ -15,6 +16,7 @@ pub mod workbook;
 use std::path::{Path, PathBuf};
 
 pub use config::{Config, default_config_path};
+pub use estimator::{Analysis, InitOptions};
 pub use problem::{Problem, Report, Summary};
 
 use checker::Checker;
@@ -39,8 +41,8 @@ pub enum Error {
     Config(PathBuf, String),
     #[error("invalid id pattern: {0}")]
     Regex(#[source] regex::Error),
-    #[error("{0} is not implemented yet")]
-    NotImplemented(&'static str),
+    #[error("{path}: config file already exists (use --force to overwrite)", path = .0.display())]
+    ConfigExists(PathBuf),
 }
 
 impl Error {
@@ -76,6 +78,19 @@ fn render_group(errs: &[Error]) -> String {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Estimates the layouts of the student tables in the Excel file (pass 1).
+/// Write [`Analysis::to_json5`] to the config file.
+pub fn init(excel: &Path, options: &InitOptions) -> Result<Analysis> {
+    let pattern = IdPattern::new(&options.id_pattern)?;
+    let workbook = Workbook::open(excel)?;
+    Ok(Analysis::new(
+        excel.to_path_buf(),
+        &workbook,
+        options,
+        &pattern,
+    ))
+}
 
 /// Checks the cross-sheet references in the Excel file with the config (pass 2).
 pub fn check(excel: &Path, config: &Config) -> Result<Report> {

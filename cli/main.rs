@@ -1,50 +1,17 @@
 use clap::Parser;
-use mosty::{Config, Error, Report, Result};
-use std::path::Path;
+use mosty::{Error, Result};
 
+mod check;
 mod cli;
+mod init;
 
 /// Returns true if any problems are found.
 fn perform(app: cli::MostyApp) -> Result<bool> {
     app.init()?;
     match &app.commands {
-        cli::MostyCommand::Init(_) => Err(Error::NotImplemented("init")),
-        cli::MostyCommand::Check(opts) => perform_check(opts),
+        cli::MostyCommand::Init(opts) => init::perform(opts).map(|_| false),
+        cli::MostyCommand::Check(opts) => check::perform(opts),
     }
-}
-
-fn perform_check(opts: &cli::CheckOpts) -> Result<bool> {
-    let results = opts
-        .files
-        .iter()
-        .map(|file| check_file(file, opts))
-        .collect();
-    let reports = Error::vec_result_to_result_vec(results)?;
-    reports.iter().for_each(print_report);
-    Ok(reports.iter().any(Report::has_problems))
-}
-
-fn check_file(file: &Path, opts: &cli::CheckOpts) -> Result<Report> {
-    let path = opts
-        .config_file
-        .clone()
-        .unwrap_or_else(|| mosty::default_config_path(file));
-    let mut config = Config::load(&path)?;
-    if let Some(pattern) = &opts.pattern {
-        config.id_pattern = pattern.clone();
-    }
-    mosty::check(file, &config)
-}
-
-// TODO: support --format and --output (spec 7.3).
-fn print_report(report: &Report) {
-    println!("{}", report.file.display());
-    report.problems.iter().for_each(|p| println!("  {p}"));
-    let s = &report.summary;
-    println!(
-        "  {} problems ({} sheets, {} references checked)",
-        s.problems, s.sheets, s.references
-    );
 }
 
 fn perform_main(args: &[String]) -> Result<bool> {

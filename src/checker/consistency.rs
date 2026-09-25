@@ -39,11 +39,7 @@ impl Checker<'_> {
         let Some(rows) = self.workbook.rows(&table.sheet) else {
             return Vec::new();
         };
-        let reader = RowReader {
-            workbook: self.workbook,
-            sheet: &table.sheet,
-            pattern: self.pattern,
-        };
+        let reader = RowReader::new(self.workbook, &table.sheet, self.pattern);
         rows.filter(|row| !table.layout.contains_row(*row))
             .map(|row| CellRef::new(row, table.layout.id_column))
             .filter_map(|cell| reader.id(cell).map(|id| (cell, id)))
