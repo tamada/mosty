@@ -160,13 +160,6 @@ impl MostyApp {
             _ => Ok(()),
         }
     }
-
-    pub fn as_slice(&self) -> &[PathBuf] {
-        match &self.commands {
-            MostyCommand::Init(opts) => &opts.files,
-            MostyCommand::Check(opts) => &opts.files,
-        }
-    }
 }
 
 fn arg_error(message: &str) -> Error {

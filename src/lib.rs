@@ -1,6 +1,25 @@
+//! mosty: MOu Seiseki Teisei ha Yadayo.
+//!
+//! Detects cross-sheet references in grade workbooks which refer to rows of other students.
+//! See `.github/assets/spec.md` for the specification.
+
+pub mod cell;
+mod checker;
+pub mod config;
+pub mod formula;
+pub mod problem;
+pub mod student;
+pub mod table;
+pub mod workbook;
+
 use std::path::{Path, PathBuf};
 
-use calamine::{Reader, Xlsx};
+pub use config::{Config, default_config_path};
+pub use problem::{Problem, Report, Summary};
+
+use checker::Checker;
+use student::IdPattern;
+use workbook::Workbook;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -8,12 +27,20 @@ pub enum Error {
     Array(Vec<Self>),
     #[error("{0}")]
     Calamine(#[source] calamine::Error),
-    #[error("{0}")]
-    Xlsx(#[source] calamine::XlsxError),
+    #[error("{path}: {cause}", path = .0.display(), cause = .1)]
+    Xlsx(PathBuf, #[source] calamine::XlsxError),
     #[error("{0}")]
     Clap(#[source] clap::Error),
     #[error("IO error for {path}: {cause}", path = .0.display(), cause = .1)]
     Io(PathBuf, #[source] std::io::Error),
+    #[error("{path}: config file not found (run `mosty init` first)", path = .0.display())]
+    ConfigNotFound(PathBuf),
+    #[error("{path}: invalid config file: {message}", path = .0.display(), message = .1)]
+    Config(PathBuf, String),
+    #[error("invalid id pattern: {0}")]
+    Regex(#[source] regex::Error),
+    #[error("{0} is not implemented yet")]
+    NotImplemented(&'static str),
 }
 
 impl Error {
@@ -50,10 +77,14 @@ fn render_group(errs: &[Error]) -> String {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub fn verify(path: &Path) -> Result<String> {
-    let mut excel: Xlsx<_> = calamine::open_workbook(path).map_err(Error::Xlsx)?;
-    let worksheets = excel.worksheets();
-    for (name, data) in worksheets {}
-
-    Ok("ok".to_string())
+/// Checks the cross-sheet references in the Excel file with the config (pass 2).
+pub fn check(excel: &Path, config: &Config) -> Result<Report> {
+    let pattern = IdPattern::new(&config.id_pattern)?;
+    let workbook = Workbook::open(excel)?;
+    let (problems, summary) = Checker::new(&workbook, config, &pattern).run();
+    Ok(Report {
+        file: excel.to_path_buf(),
+        summary,
+        problems,
+    })
 }

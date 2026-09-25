@@ -1,0 +1,10 @@
+// testdata/README.md に記載した、mosty init の期待される推定結果。
+{
+  id_pattern: "^[0-9]{7}$",
+  sheets: {
+    "名簿": { id_column: 0, name_column: 1, start_row: 1, end_row: 5 },
+    "中間": { id_column: 0, name_column: 1, start_row: 1, end_row: 4 },
+    "試験": { id_column: 0, name_column: 1, start_row: 1, end_row: 5 },
+    "最終成績": { id_column: 0, name_column: 1, start_row: 1, end_row: 3 },
+  },
+}

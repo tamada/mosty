@@ -1,0 +1,8 @@
+// 先頭に英字の付いた学生証番号を扱う設定（既定の正規表現では名簿は学生シートにならない）。
+{
+  id_pattern: "^[A-Za-z]*(?<id>[0-9]{7})$",
+  sheets: {
+    "名簿": { id_column: 0, name_column: 1, start_row: 1, end_row: 5 },
+    "最終成績": { id_column: 0, name_column: 1, start_row: 1, end_row: 5 },
+  },
+}
