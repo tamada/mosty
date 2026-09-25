@@ -1,19 +1,23 @@
 //! `mosty check`: verifies the cross-sheet references (pass 2).
 
 use crate::cli::CheckOpts;
+use crate::output;
 use mosty::{Config, Error, InitOptions, Report, Result};
 use std::path::Path;
 
-/// Returns true if any problems are found.
+/// Returns true if any problems are found. The reports of the files checked successfully
+/// are written even if other files fail, and then the errors are returned.
 pub fn perform(opts: &CheckOpts) -> Result<bool> {
-    let results = opts
+    let (reports, errors): (Vec<_>, Vec<_>) = opts
         .files
         .iter()
         .map(|file| check_file(file, opts))
-        .collect();
-    let reports = Error::vec_result_to_result_vec(results)?;
-    reports.iter().for_each(print_report);
-    Ok(reports.iter().any(Report::has_problems))
+        .partition(Result::is_ok);
+    let reports: Vec<Report> = reports.into_iter().flatten().collect();
+    let text = mosty::output::render(&reports, opts.format.into());
+    output::write(opts.output.as_deref(), &text)?;
+    let errors = errors.into_iter().filter_map(Result::err).collect();
+    Error::error_or(reports.iter().any(Report::has_problems), errors)
 }
 
 fn check_file(file: &Path, opts: &CheckOpts) -> Result<Report> {
@@ -48,15 +52,4 @@ fn init_config(file: &Path, path: &Path, opts: &CheckOpts) -> Result<Config> {
     let analysis = mosty::init(file, &options)?;
     crate::init::write_config(&analysis, path, false)?;
     Ok(analysis.config())
-}
-
-// TODO: support --format and --output (spec 7.3).
-fn print_report(report: &Report) {
-    println!("{}", report.file.display());
-    report.problems.iter().for_each(|p| println!("  {p}"));
-    let s = &report.summary;
-    println!(
-        "  {} problems ({} sheets, {} references checked)",
-        s.problems, s.sheets, s.references
-    );
 }

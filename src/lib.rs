@@ -8,6 +8,7 @@ mod checker;
 pub mod config;
 pub mod estimator;
 pub mod formula;
+pub mod output;
 pub mod problem;
 pub mod student;
 pub mod table;

@@ -133,11 +133,21 @@ pub struct CheckOpts {
     pub files: Vec<PathBuf>,
 }
 
-#[derive(Debug, ValueEnum, Parser, Clone)]
+#[derive(Debug, ValueEnum, Parser, Clone, Copy)]
 pub enum Format {
     Default,
     Json,
     Markdown,
+}
+
+impl From<Format> for mosty::output::Format {
+    fn from(format: Format) -> Self {
+        match format {
+            Format::Default => mosty::output::Format::Default,
+            Format::Json => mosty::output::Format::Json,
+            Format::Markdown => mosty::output::Format::Markdown,
+        }
+    }
 }
 
 impl MostyApp {

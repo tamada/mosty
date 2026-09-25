@@ -13,6 +13,12 @@ pub const DEFAULT_ID_PATTERN: &str = "^[0-9]{7}$";
 #[serde(transparent)]
 pub struct StudentId(String);
 
+impl From<&str> for StudentId {
+    fn from(id: &str) -> Self {
+        Self(id.to_string())
+    }
+}
+
 impl fmt::Display for StudentId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)

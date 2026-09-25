@@ -377,12 +377,12 @@ grades.xlsx
 ```markdown
 ## grades.xlsx
 
-| 種類 | 参照元 | 参照先 | 内容 |
+| Kind | Source | Target | Description |
 |---|---|---|---|
 | id_mismatch | 最終成績!D5 (1234004 山田) | 課題!C6 (1234005 佐藤) | student id mismatch |
 | multi_student_range | 最終成績!E5 (1234004 山田) | 課題!C2:C100 | range spans multiple students |
-| duplicated_id | 課題!A12, 課題!A13 | | duplicated student id 1234010 |
-| unknown_sheet | 小テスト | | sheet is not in the config file |
+| duplicated_id | 課題!A12, 課題!A13 |  | duplicated student id 1234010 |
+| unknown_sheet | 小テスト |  | sheet is not in the config file (run `mosty init` again) |
 
 4 problems (5 sheets, 1,234 references checked)
 ```
@@ -397,6 +397,7 @@ grades.xlsx
 | 3 | コマンドライン引数の誤り |
 
 - 複数のファイルを指定し、ファイルごとに結果が異なる場合は、**最も大きい値** で終了する。
+  - 一部のファイルでエラーが起きた場合も、検証できたファイルの検証結果は出力し、その後でエラーを標準エラー出力に出す。
   例えば、問題が見つかったファイル（1）と読み込みに失敗したファイル（2）があれば 2 で終了する。
 - 値の大きさは深刻さの順になるように割り当てている。コマンドライン引数の誤り（3）は処理を始める前に終了するため、他の値と混在しない。
 

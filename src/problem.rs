@@ -4,7 +4,7 @@ use crate::cell::{CellRange, CellRef};
 use crate::student::{Student, StudentId};
 use serde::Serialize;
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// A cell in a student row.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -77,9 +77,15 @@ pub struct Summary {
 /// The result of checking an Excel file.
 #[derive(Debug, Clone, Serialize)]
 pub struct Report {
+    #[serde(serialize_with = "serialize_path")]
     pub file: PathBuf,
     pub summary: Summary,
     pub problems: Vec<Problem>,
+}
+
+/// Serializes the path as a string (lossy for non UTF-8 paths).
+fn serialize_path<S: serde::Serializer>(path: &Path, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.collect_str(&path.display())
 }
 
 impl Report {
@@ -112,6 +118,18 @@ impl fmt::Display for RangeLocation {
 }
 
 impl Problem {
+    /// The kind of the problem, which is the same as `kind` in JSON (e.g., `id_mismatch`).
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Problem::IdMismatch { .. } => "id_mismatch",
+            Problem::MultiStudentRange { .. } => "multi_student_range",
+            Problem::DuplicatedId { .. } => "duplicated_id",
+            Problem::UnknownSheet { .. } => "unknown_sheet",
+            Problem::MissingSheet { .. } => "missing_sheet",
+            Problem::IdOutsideTable { .. } => "id_outside_table",
+        }
+    }
+
     /// Where the problem is (e.g., `最終成績!D5 (1234004 山田) -> 課題!C6 (1234005 佐藤)`).
     pub fn subject(&self) -> String {
         match self {

@@ -1,6 +1,7 @@
 //! `mosty init`: writes the config files (pass 1).
 
 use crate::cli::InitOpts;
+use crate::output;
 use mosty::{Analysis, Error, InitOptions, Result};
 use std::path::Path;
 
@@ -24,7 +25,7 @@ fn init_file(file: &Path, opts: &InitOpts, options: &InitOptions) -> Result<()> 
         .clone()
         .unwrap_or_else(|| mosty::default_config_path(file));
     write_config(&analysis, &dest, opts.force)?;
-    if !is_stdout(&dest) {
+    if !output::is_stdout(&dest) {
         println!("{}: wrote {}", file.display(), dest.display());
     }
     Ok(())
@@ -32,16 +33,8 @@ fn init_file(file: &Path, opts: &InitOpts, options: &InitOptions) -> Result<()> 
 
 /// Writes the config file. `-` means stdout.
 pub fn write_config(analysis: &Analysis, dest: &Path, force: bool) -> Result<()> {
-    if is_stdout(dest) {
-        print!("{}", analysis.to_json5());
-        return Ok(());
-    }
-    if dest.exists() && !force {
+    if !output::is_stdout(dest) && dest.exists() && !force {
         return Err(Error::ConfigExists(dest.to_path_buf()));
     }
-    std::fs::write(dest, analysis.to_json5()).map_err(|e| Error::Io(dest.to_path_buf(), e))
-}
-
-fn is_stdout(dest: &Path) -> bool {
-    dest == Path::new("-")
+    output::write(Some(dest), &analysis.to_json5())
 }

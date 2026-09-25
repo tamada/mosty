@@ -4,6 +4,7 @@ use mosty::{Error, Result};
 mod check;
 mod cli;
 mod init;
+mod output;
 
 /// Returns true if any problems are found.
 fn perform(app: cli::MostyApp) -> Result<bool> {
