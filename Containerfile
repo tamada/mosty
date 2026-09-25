@@ -10,7 +10,7 @@ RUN cargo build --release --locked
 # ------------------------------
 # Stage 2. Build for runtime
 # ------------------------------
-FROM dhi.io/debian-base:trixie
+FROM gcr.io/distroless/cc-debian13:nonroot
 
 ARG GIT_REVISION
 ARG BUILD_DATE

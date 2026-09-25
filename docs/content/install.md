@@ -55,15 +55,13 @@ cargo install --path .
 カレントディレクトリをコンテナの `/opt` にマウントしてください。
 
 ```sh
-docker run --rm -v "$PWD:/opt" quay.io/tama5/mosty check grades.xlsx
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/opt" quay.io/tama5/mosty check grades.xlsx
 ```
 
-コンテナ内の mosty は `nonroot`（uid 65532）で動きます。
-Linux では、`mosty init` などが設定ファイルを書き出せるように、`--user` で自分の uid と gid を指定してください（macOS の Docker Desktop では不要です）。
-
-```sh
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/opt" quay.io/tama5/mosty init grades.xlsx
-```
+`--user` で自分の uid と gid を指定するのは、mosty が設定ファイルを書き出せるようにするためです。
+コンテナ内の mosty は `nonroot`（uid 65532）で動くので、Linux では指定しないとカレントディレクトリに書き込めません。
+`mosty init` だけでなく、設定ファイルがないときの `mosty check` も、最初に設定ファイルを書き出します。
+macOS の Docker Desktop では、`--user` を省略しても動きます。
 
 ---
 
