@@ -1,4 +1,4 @@
-# mosty
+# <img src="docs/assets/mosty.svg" width="48" height="48" alt=""> mosty
 
 [![Version](https://img.shields.io/badge/Version-0.1.0-blue)](https://github.com/tamada/mosty/releases/tag/v0.1.0)
 [![License-MIT](https://img.shields.io/badge/License-MIT-blue)](https://github.com/tamada/mosty/blob/main/LICENSE)
