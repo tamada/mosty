@@ -1,0 +1,43 @@
+// stale.xlsx の変更前の状態に対する設定ファイル。
+// stale.xlsx はこの設定ファイルを作った後に、次の変更が加えられたものとする。
+//   - 名簿に学生 1234006 を追加した（行 6、end_row の外）
+//   - シート「小テスト」を追加した
+//   - シート「旧課題」を削除した
+{
+  id_pattern: "^[0-9]{7}$",
+  sheets: {
+    "名簿": {
+      id_column: 0,
+      name_column: 1,
+      start_row: 1,
+      end_row: 5,
+    },
+    "課題": {
+      id_column: 0,
+      name_column: 1,
+      start_row: 3,
+      end_row: 7,
+    },
+    "試験": {
+      id_column: 0,
+      name_column: 1,
+      start_row: 1,
+      end_row: 5,
+    },
+    "配点": {
+      skip: true,
+    },
+    "最終成績": {
+      id_column: 0,
+      name_column: 1,
+      start_row: 1,
+      end_row: 5,
+    },
+    "旧課題": {
+      id_column: 0,
+      name_column: 1,
+      start_row: 1,
+      end_row: 5,
+    },
+  },
+}

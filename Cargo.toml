@@ -1,0 +1,16 @@
+[package]
+name = "mosty"
+version = "0.1.0"
+description = "mosty: MOu Seiseki Teisei ha Yadayo"
+edition = "2024"
+
+[dependencies]
+calamine = "0.36.1"
+clap = { version = "4.6.6", features = ["derive"] }
+env_logger = "0.11.11"
+log = "0.4.34"
+thiserror = "2.0.21"
+
+[[bin]]
+name = "mosty"
+path = "cli/main.rs"
