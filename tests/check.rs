@@ -1,13 +1,9 @@
 //! Checks the test workbooks against the expected results in testdata/README.md.
 
-use mosty::{Config, Problem, Report, default_config_path};
-use std::path::{Path, PathBuf};
+mod common;
 
-fn testdata(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("testdata")
-        .join(name)
-}
+use common::testdata;
+use mosty::{Config, Problem, Report, default_config_path};
 
 fn check(name: &str) -> Report {
     let excel = testdata(name);

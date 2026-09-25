@@ -280,9 +280,12 @@ impl Parser {
     }
 
     /// Reads a term without a sheet name: a local reference, a named range, or a literal.
+    /// A term followed by `!` is a 3D reference (e.g., `Sheet1:Sheet3!A1`).
     fn local_term(&mut self, start: usize) {
         let text = self.read_range_text();
-        if CellRange::parse(&text).is_some() {
+        if self.eat('!') {
+            self.unresolved_tail(text);
+        } else if CellRange::parse(&text).is_some() {
             self.push_reference(start, None, &text);
         } else if is_name(&text) {
             self.formula.unresolved.push(text);
@@ -316,9 +319,10 @@ impl Parser {
         if !self.eat('!') {
             return;
         }
-        match name.starts_with('[') {
-            true => self.external_tail(name),
-            false => self.sheet_reference(start, Some(name)),
+        if name.starts_with('[') || name.contains(':') {
+            self.unresolved_tail(name); // an external or 3D reference
+        } else {
+            self.sheet_reference(start, Some(name));
         }
     }
 
@@ -328,16 +332,17 @@ impl Parser {
         while self.peek().is_some_and(|c| c != ']') {
             self.pos += 1;
         }
-        self.pos += 1;
+        self.eat(']');
         self.read_word();
         let name = self.chars[start..self.pos].iter().collect();
         if self.eat('!') {
-            self.external_tail(name);
+            self.unresolved_tail(name);
         }
     }
 
-    /// Reads the cell part of an external reference, and records it as unresolved.
-    fn external_tail(&mut self, name: String) {
+    /// Reads the cell part after `<name>!` of an external or 3D reference, and records
+    /// the whole reference as unresolved.
+    fn unresolved_tail(&mut self, name: String) {
         let range = self.read_range_text();
         self.formula.unresolved.push(format!("{name}!{range}"));
     }
@@ -447,6 +452,34 @@ mod tests {
         );
         assert!(parse("IF(A1>0,TRUE,1.5)").unresolved.is_empty());
         assert!(parse("IFERROR(A1,#N/A)").unresolved.is_empty());
+    }
+
+    #[test]
+    fn test_3d_references() {
+        let formula = parse("SUM(Sheet1:Sheet3!A1)+SUM('Sheet 1:Sheet 3'!B2)");
+        assert!(formula.references.is_empty());
+        assert_eq!(
+            formula.unresolved,
+            vec!["Sheet1:Sheet3!A1", "Sheet 1:Sheet 3!B2"]
+        );
+    }
+
+    #[test]
+    fn test_malformed_formulas() {
+        // They must not panic.
+        for text in [
+            "Table1[Col",
+            "'unterminated",
+            "\"unterminated",
+            "#",
+            "課題!",
+            "((",
+            "))",
+        ] {
+            parse(text);
+        }
+        let formula = parse("SUM(Table1[[#This Row],[得点]])");
+        assert!(formula.references.is_empty());
     }
 
     #[test]

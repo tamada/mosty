@@ -2,6 +2,8 @@
 name = "mosty"
 version = "0.1.0"
 description = "mosty: MOu Seiseki Teisei ha Yadayo"
+license = "MIT"
+readme = "README.md"
 edition = "2024"
 
 [dependencies]

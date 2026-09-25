@@ -1,14 +1,10 @@
 //! Estimates the layouts of the test workbooks, and compares them with the config files
 //! in testdata (the expected results of `mosty init`).
 
-use mosty::{Config, InitOptions, default_config_path};
-use std::path::{Path, PathBuf};
+mod common;
 
-fn testdata(name: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("testdata")
-        .join(name)
-}
+use common::testdata;
+use mosty::{Config, InitOptions, default_config_path};
 
 fn assert_estimated(name: &str, options: &InitOptions) {
     let excel = testdata(name);

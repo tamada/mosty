@@ -51,9 +51,6 @@ pub enum Error {
     /// Multiple errors (e.g., for multiple Excel files).
     #[error("{}", render_group(.0))]
     Array(Vec<Self>),
-    /// An error of calamine.
-    #[error("{0}")]
-    Calamine(#[source] calamine::Error),
     /// The Excel file cannot be read.
     #[error("{path}: {cause}", path = .0.display(), cause = .1)]
     Xlsx(PathBuf, #[source] calamine::XlsxError),

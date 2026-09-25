@@ -5,7 +5,7 @@ mosty のテストに用いる Excel ファイルである。仕様は [../.gith
 - 学生の氏名・学生証番号はすべて架空のものである。
 - 行・列は仕様書と同じく 0 始まりのインデックスで書く。セル番地は A1 形式で書く。
 - Excel ファイルは [generate.py](generate.py) で生成している。内容を変える場合は `generate.py` を修正して再生成する。
-- `mosty.<Excel ファイル名>.json5` は各 Excel ファイルの設定ファイルで、`mosty init` の期待される推定結果でもある（`mosty.stale.xlsx.json5` を除く）。`tests/check.rs` がこれを使って `mosty check` の結果を確かめる。
+- `mosty.<Excel ファイル名>.json5` は各 Excel ファイルの設定ファイルで、`mosty init` の期待される推定結果でもある（`mosty.stale.xlsx.json5` を除く）。`tests/check.rs`・`tests/init.rs`・`tests/cli.rs` がこれを使って `mosty check` と `mosty init` の結果を確かめる。
 
 ```sh
 pip install xlsxwriter
