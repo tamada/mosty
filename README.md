@@ -1,5 +1,12 @@
 # mosty
 
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue)](https://github.com/tamada/mosty/releases/tag/v0.1.0)
+[![License-MIT](https://img.shields.io/badge/License-MIT-blue)](https://github.com/tamada/mosty/blob/main/LICENSE)
+
+[![Coverage Status](https://coveralls.io/repos/github/tamada/mosty/badge.svg)](https://coveralls.io/github/tamada/mosty)
+
+[![Docker](https://img.shields.io/badge/Container-quay.io/tama5/mosty:0.1.0-blue?logo=docker)](https://quay.io/repository/tama5/mosty)
+
 もう成績訂正はやだよ。
 
 MOu Seiseki Teisei ha Yadayo!
@@ -78,6 +85,21 @@ OPTIONS
 
 - 対応形式: `.xlsx`、`.xlsm`
 - 終了ステータス: `0` 問題なし、`1` 問題あり、`2` ファイル・設定ファイルのエラー、`3` コマンドライン引数の誤り
+
+### 🐳 コンテナで実行する
+
+カレントディレクトリをコンテナの `/opt` にマウントして実行します。
+
+```sh
+docker run --rm -v "$PWD:/opt" quay.io/tama5/mosty check grades.xlsx
+```
+
+コンテナ内の mosty は `nonroot`（uid 65532）で動きます。
+Linux では、`mosty init` などが設定ファイルを書き出せるように、`--user` で自分の uid と gid を指定してください（macOS の Docker Desktop では不要です）。
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/opt" quay.io/tama5/mosty init grades.xlsx
+```
 
 詳細な仕様は [.github/assets/spec.md](.github/assets/spec.md) を参照してください。
 

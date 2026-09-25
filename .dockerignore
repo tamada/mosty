@@ -1,0 +1,5 @@
+# Keep the build context small: the host build artifacts are large, and are
+# rebuilt in the container anyway.
+/target
+/.git
+/testdata
