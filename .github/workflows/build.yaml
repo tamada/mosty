@@ -7,11 +7,19 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      # Let the other OSes finish when one fails, so that a failure on Windows
+      # does not hide whether the others pass.
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
           - macOS-latest
-          # - windows-latest
+          - windows-latest
+    # The default shell on Windows is PowerShell, which does not stop at a
+    # failing command in the middle of a multi-line run.
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: setup rust
         run: |
